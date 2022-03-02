@@ -1,0 +1,14 @@
+{
+  "name": "@mongoosejs/migrations",
+  "version": "0.0.1",
+  "scripts": {
+    "test": "mocha test/*.test.js"
+  },
+  "peerDependencies": {
+    "mongoose": "6.x"
+  },
+  "devDependencies": {
+    "mocha": "9.2.1",
+    "mongoose": "6.x"
+  }
+}
