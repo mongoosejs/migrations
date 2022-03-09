@@ -69,5 +69,27 @@ describe('eachAsync', function() {
     assert.equal(count, 2);
     assert.equal(err.message, 'Oops!');
     assert.equal(migration.status, 'error');
+
+    let docs = await TestModel.find({ ship: 'USS Enterprise' }).sort({ _id: 1 });
+    assert.deepStrictEqual(docs.map(doc => doc.name), ['Jean-Luc Picard', 'Will Riker']);
+
+    await migrations.endMigration();
+
+    migration = await migrations.restartMigration(migration);
+
+    count = 0;
+    await migrations.eachAsync(TestModel, async function addShip(doc) {
+      ++count;
+      doc.ship = 'USS Enterprise';
+      await doc.save();
+    });
+    assert.equal(count, 2);
+    docs = await TestModel.find({ ship: 'USS Enterprise' }).sort({ _id: 1 });
+    assert.deepStrictEqual(docs.map(doc => doc.name), [
+      'Jean-Luc Picard',
+      'Will Riker',
+      'Geordi La Forge',
+      'Deanna Troi'
+    ]);
   });
 });

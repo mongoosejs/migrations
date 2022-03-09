@@ -37,6 +37,7 @@ module.exports = new mongoose.Schema({
   endedAt: {
     type: Date
   },
+  state: 'Mixed',
   firstSeenSortKey: 'Mixed',
   lastSeenSortKey: 'Mixed',
   parameters: 'Mixed',

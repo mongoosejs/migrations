@@ -31,6 +31,8 @@ exports._initMigrationFramework = function _initMigrationFramework(conn) {
           update: this.getUpdate()
         }
       });
+      migration.lastOperationId = op._id;
+      await migration.save();
 
       mongooseObjToOp.set(this, op);
     });
@@ -51,21 +53,45 @@ exports._initMigrationFramework = function _initMigrationFramework(conn) {
 };
 
 exports.startMigration = async function startMigration() {
-  migration = await Migration.create({});
+  migration = await Migration.create({
+    startedAt: new Date()
+  });
 
   return migration;
 };
 
+exports.restartMigration = async function restartMigration(_migration) {
+  const ops = await Operation.find({ migrationId: _migration._id });
+
+  const newMigration = await Migration.create({
+    status: 'in_progress',
+    startedAt: new Date(),
+    restartedFromId: _migration._id,
+    originalMigrationId: _migration.originalMigrationId || _migration._id
+  });
+
+  const newOps = ops.map(op => new Operation({
+    ...op.toObject(),
+    _id: new mongoose.Types.ObjectId(),
+    migrationId: newMigration._id
+  }));
+  await Operation.create(newOps);
+
+  migration = newMigration;
+};
+
 exports.endMigration = async function endMigration(error) {
-  if (error) {
-    migration.status = 'error';
-    migration.error.message = error.message;
-    migration.error.stack = error.stack;
-  } else {
-    migration.status = 'complete';
+  if (migration.status === 'in_progress') {
+    if (error) {
+      migration.status = 'error';
+      migration.error.message = error.message;
+      migration.error.stack = error.stack;
+    } else {
+      migration.status = 'complete';
+    }
+    migration.endedAt = new Date();
+    await migration.save();
   }
-  migration.endedAt = new Date();
-  await migration.save();
 
   migration = null;
 };
@@ -76,23 +102,43 @@ exports.eachAsync = async function eachAsync(model, options, fn) {
     options = null;
   }
 
-  const op = await Operation.create({
+  const totalCount = await model.countDocuments();
+
+  const opFilter = migration.lastOperationId ? { _id: { $gt: migration.lastOperationId } } : {};
+  Object.assign(opFilter, {
     migrationId: migration._id,
     modelName: model.modelName,
     opName: 'eachAsync',
     userFunctionName: options?.name || fn.name,
-    parameters: {
-      options
-    }
   });
+  const op = await Operation.findOneAndUpdate(
+    opFilter,
+    {
+      $setOnInsert: {
+        parameters: {
+          options
+        },
+        state: {
+          current: 0,
+          totalCount
+        }
+      }
+    },
+    { new: true, upsert: true }
+  );
 
-  const cursor = model.find().sort({ _id: 1 }).cursor();
+  migration.lastOperationId = op._id;
+  await migration.save();
+
+  const cursorFilter = op.lastSeenSortKey != null ? { _id: { $gte: op.lastSeenSortKey } } : {};
+  const cursor = model.find(cursorFilter).sort({ _id: 1 }).cursor();
 
   for await (const doc of cursor) {
     if (op.firstSeenSortKey == null) {
       op.firstSeenSortKey = doc._id;
     }
     op.lastSeenSortKey = doc._id;
+    ++op.state.current;
     await op.save();
 
     try {
