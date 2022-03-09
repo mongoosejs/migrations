@@ -3,6 +3,10 @@
 const mongoose = require('mongoose');
 
 module.exports = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
   status: {
     type: String,
     required: true,
@@ -32,4 +36,4 @@ module.exports = new mongoose.Schema({
     type: 'ObjectId',
     ref: '_Operation'
   }
-}, { timestamps: true });
+}, { timestamps: true, minimize: false });

@@ -19,7 +19,7 @@ describe('updates', function() {
   });
 
   beforeEach(async function() {
-    migration = await migrations.startMigration();
+    migration = await migrations.startMigration({ name: 'test' });
   });
 
   afterEach(() => migrations.endMigration());

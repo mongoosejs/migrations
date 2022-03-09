@@ -4,6 +4,8 @@ const migrationSchema = require('./src/schemas/migrationSchema');
 const mongoose = require('mongoose');
 const operationSchema = require('./src/schemas/operationSchema');
 
+const debug = require('debug')('migrations');
+
 let Migration = null;
 let Operation = null;
 let migration = null;
@@ -34,6 +36,8 @@ exports._initMigrationFramework = function _initMigrationFramework(conn) {
       migration.lastOperationId = op._id;
       await migration.save();
 
+      debug(`${this.model.modelName}.${this.op}`);
+
       mongooseObjToOp.set(this, op);
     });
 
@@ -47,28 +51,44 @@ exports._initMigrationFramework = function _initMigrationFramework(conn) {
       op.status = 'complete';
       op.result = res;
 
+      debug(`${this.model.modelName}.${this.op}: ${res.modifiedCount} updated`);
+
       await op.save();
     });
   });
 };
 
-exports.startMigration = async function startMigration() {
+exports.startMigration = async function startMigration(options) {
+  options = options || {};
+  if (options.restart) {
+    return exports.restartMigration(options);
+  }
+
   migration = await Migration.create({
+    name: options.name,
     startedAt: new Date()
   });
+
+  migration._options = options;
 
   return migration;
 };
 
-exports.restartMigration = async function restartMigration(_migration) {
+exports.restartMigration = async function restartMigration(options) {
+  const { name } = options;
+  const _migration = await Migration.findOne({ name }).sort({ createdAt: -1 });
+
   const ops = await Operation.find({ migrationId: _migration._id });
 
   const newMigration = await Migration.create({
+    name,
     status: 'in_progress',
     startedAt: new Date(),
     restartedFromId: _migration._id,
     originalMigrationId: _migration.originalMigrationId || _migration._id
   });
+
+  newMigration._options = options;
 
   const newOps = ops.map(op => new Operation({
     ...op.toObject(),
@@ -143,6 +163,7 @@ exports.eachAsync = async function eachAsync(model, options, fn) {
     ++op.state.current;
     op.markModified('state.current');
     await op.save();
+    debug(`${op.opName} ${op.userFunctionName}: ${op.state.current} / ${op.state.totalCount}`);
 
     try {
       await fn(doc);
@@ -156,6 +177,8 @@ exports.eachAsync = async function eachAsync(model, options, fn) {
       await op.save();
 
       migration.status = 'error';
+      migration.error.message = err.message;
+      migration.error.stack = err.stack;
       migration.endedAt = new Date();
       await migration.save();
 

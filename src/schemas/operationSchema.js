@@ -42,4 +42,4 @@ module.exports = new mongoose.Schema({
   lastSeenSortKey: 'Mixed',
   parameters: 'Mixed',
   result: 'Mixed'
-});
+}, { minimize: false });

@@ -1,8 +1,11 @@
 {
   "name": "@mongoosejs/migrations",
-  "version": "0.0.1", 
+  "version": "0.0.1",
   "scripts": {
     "test": "mocha test/*.test.js"
+  },
+  "dependencies": {
+    "debug": "4.x"
   },
   "peerDependencies": {
     "mongoose": "6.x"

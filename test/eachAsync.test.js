@@ -28,7 +28,7 @@ describe('eachAsync', function() {
       { _id: 3, name: 'Deanna Troi' }
     ]);
 
-    migration = await migrations.startMigration();
+    migration = await migrations.startMigration({ name: 'test' });
   });
 
   afterEach(() => migrations.endMigration());
@@ -76,7 +76,7 @@ describe('eachAsync', function() {
 
     await migrations.endMigration();
 
-    migration = await migrations.restartMigration(migration);
+    migration = await migrations.restartMigration({ name: 'test' });
     count = 0;
     await migrations.eachAsync(TestModel, async function addShip(doc) {
       ++count;
