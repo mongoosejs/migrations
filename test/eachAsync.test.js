@@ -17,16 +17,17 @@ describe('eachAsync', function() {
       email: String,
       ship: String
     }));
+  });
 
+  beforeEach(async function() {
+    await TestModel.collection.deleteMany({});
     await TestModel.collection.insertMany([
       { _id: 0, name: 'Jean-Luc Picard' },
       { _id: 1, name: 'Will Riker' },
       { _id: 2, name: 'Geordi La Forge' },
       { _id: 3, name: 'Deanna Troi' }
     ]);
-  });
 
-  beforeEach(async function() {
     migration = await migrations.startMigration();
   });
 
@@ -76,10 +77,12 @@ describe('eachAsync', function() {
     await migrations.endMigration();
 
     migration = await migrations.restartMigration(migration);
-
     count = 0;
     await migrations.eachAsync(TestModel, async function addShip(doc) {
       ++count;
+
+      const op = await mongoose.model('_Operation').findById(migration.lastOperationId);
+      assert.equal(op.state.current, count + 2);
       doc.ship = 'USS Enterprise';
       await doc.save();
     });
