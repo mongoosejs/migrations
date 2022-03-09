@@ -10,7 +10,8 @@ describe('updates', function() {
   let migration;
 
   before(function() {
-    console.log('Create new model');
+    mongoose.deleteModel(/Test/);
+
     TestModel = mongoose.model('Test', mongoose.Schema({
       name: String,
       email: String
@@ -27,8 +28,9 @@ describe('updates', function() {
     await TestModel.collection.insertOne({ name: 'John Smith' });
     await TestModel.updateOne({ name: 'John Smith' }, { name: 'John Smythe' });
 
-    assert.equal(migration.operations.length, 1);
-    assert.deepEqual(migration.operations[0].result, {
+    const operations = await mongoose.model('_Operation').find({ migrationId: migration._id });
+    assert.equal(operations.length, 1);
+    assert.deepEqual(operations[0].result, {
       acknowledged: true,
       matchedCount: 1,
       modifiedCount: 1,

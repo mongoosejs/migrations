@@ -2,8 +2,10 @@
 
 const migrationSchema = require('./src/schemas/migrationSchema');
 const mongoose = require('mongoose');
+const operationSchema = require('./src/schemas/operationSchema');
 
 let Migration = null;
+let Operation = null;
 let migration = null;
 
 const mongooseObjToOp = new WeakMap();
@@ -16,10 +18,12 @@ exports._initMigrationFramework = function _initMigrationFramework(conn) {
   }
 
   Migration = Migration || conn.model('_Migration', migrationSchema, '_migrations');
+  Operation = Operation || conn.model('_Operation', operationSchema, '_operations');
 
   mongoose.plugin(function(schema) {
     schema.pre(['updateOne', 'updateMany', 'replaceOne'], async function() {
-      migration.operations.push({
+      const op = await Operation.create({
+        migrationId: migration._id,
         modelName: this.model.modelName,
         opName: this.op,
         parameters: {
@@ -27,14 +31,13 @@ exports._initMigrationFramework = function _initMigrationFramework(conn) {
           update: this.getUpdate()
         }
       });
-      mongooseObjToOp.set(this, migration.operations[migration.operations.length - 1]);
 
-      await migration.save();
+      mongooseObjToOp.set(this, op);
     });
 
     schema.post(['updateOne', 'updateMany', 'replaceOne'], async function(res) {
       const op = mongooseObjToOp.get(this);
-      console.log('X', op, res);
+
       if (op == null) {
         return;
       }
@@ -42,7 +45,7 @@ exports._initMigrationFramework = function _initMigrationFramework(conn) {
       op.status = 'complete';
       op.result = res;
 
-      await migration.save();
+      await op.save();
     });
   });
 };
@@ -72,4 +75,44 @@ exports.eachAsync = async function eachAsync(model, options, fn) {
     fn = options;
     options = null;
   }
+
+  const op = await Operation.create({
+    migrationId: migration._id,
+    modelName: model.modelName,
+    opName: 'eachAsync',
+    userFunctionName: options?.name || fn.name,
+    parameters: {
+      options
+    }
+  });
+
+  const cursor = model.find().sort({ _id: 1 }).cursor();
+
+  for await (const doc of cursor) {
+    if (op.firstSeenSortKey == null) {
+      op.firstSeenSortKey = doc._id;
+    }
+    op.lastSeenSortKey = doc._id;
+    await op.save();
+
+    try {
+      await fn(doc);
+    } catch (err) {
+      op.status = 'error';
+      op.error.message = err.message;
+      op.error.stack = err.stack;
+      op.endedAt = new Date();
+      await op.save();
+
+      migration.status = 'error';
+      migration.endedAt = new Date();
+      await migration.save();
+
+      throw err;
+    }
+  }
+
+  op.status = 'complete';
+  op.endedAt = new Date();
+  await op.save();
 };
