@@ -9,14 +9,13 @@ const debug = require('debug')('migrations');
 let Migration = null;
 let Operation = null;
 let migration = null;
+let didInit = false;
 
 exports.models = { Migration: null, Operation: null };
 
 const mongooseObjToOp = new WeakMap();
 
-(function _initMigrationFramework(conn) {
-  conn = conn || mongoose.connection;
-
+exports.initMigrationModels = function initMigrationModels(conn) {
   if (conn.models._Migration) {
     return;
   }
@@ -25,6 +24,12 @@ const mongooseObjToOp = new WeakMap();
   exports.models.Migration = Migration;
   Operation = Operation || conn.model('_Operation', operationSchema, '_operations');
   exports.models.Operation = Operation;
+}
+
+exports.initMigrationFramework = function initMigrationFramework(conn) {
+  conn = conn || mongoose.connection;
+
+  exports.initMigrationModels(conn);
 
   mongoose.plugin(function(schema) {
     schema.pre(['updateOne', 'updateMany', 'replaceOne'], async function() {
@@ -60,9 +65,13 @@ const mongooseObjToOp = new WeakMap();
       await op.save();
     });
   });
-})();
+};
 
 exports.startMigration = async function startMigration(options) {
+  if (!didInit) {
+    exports.initMigrationFramework();
+  }
+
   options = options || {};
   if (options.restart) {
     return exports.restartMigration(options);
@@ -84,6 +93,10 @@ exports.startMigration = async function startMigration(options) {
 };
 
 exports.restartMigration = async function restartMigration(options) {
+  if (!didInit) {
+    exports.initMigrationFramework();
+  }
+
   const { name } = options;
   const _migration = await Migration.findOne({ name }).sort({ createdAt: -1 });
 
@@ -112,6 +125,10 @@ exports.restartMigration = async function restartMigration(options) {
 };
 
 exports.endMigration = async function endMigration(error) {
+  if (!didInit) {
+    exports.initMigrationFramework();
+  }
+
   if (migration.status === 'in_progress') {
     if (error) {
       migration.status = 'error';
@@ -128,6 +145,10 @@ exports.endMigration = async function endMigration(error) {
 };
 
 exports.eachAsync = async function eachAsync(model, options, fn) {
+  if (migration == null) {
+    throw new Error('Cannot call `eachAsync()` without starting a migration first');
+  }
+
   if (typeof options === 'function') {
     fn = options;
     options = null;
