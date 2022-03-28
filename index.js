@@ -24,15 +24,20 @@ exports.initMigrationModels = function initMigrationModels(conn) {
   exports.models.Migration = Migration;
   Operation = Operation || conn.model('_Operation', operationSchema, '_operations');
   exports.models.Operation = Operation;
-}
+};
 
 exports.initMigrationFramework = function initMigrationFramework(conn) {
   conn = conn || mongoose.connection;
+  didInit = true;
 
   exports.initMigrationModels(conn);
 
   mongoose.plugin(function(schema) {
     schema.pre(['updateOne', 'updateMany', 'replaceOne'], async function() {
+      if (migration == null) {
+        return;
+      }
+
       const op = await Operation.create({
         migrationId: migration._id,
         modelName: this.model.modelName,
@@ -51,6 +56,10 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
     });
 
     schema.post(['updateOne', 'updateMany', 'replaceOne'], async function(res) {
+      if (migration == null) {
+        return;
+      }
+
       const op = mongooseObjToOp.get(this);
 
       if (op == null) {
@@ -66,6 +75,8 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
     });
   });
 };
+
+exports.initMigrationFramework();
 
 exports.startMigration = async function startMigration(options) {
   if (!didInit) {
