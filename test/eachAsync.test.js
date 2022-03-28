@@ -32,6 +32,7 @@ describe('eachAsync', function() {
   });
 
   afterEach(() => migrations.endMigration());
+  afterEach(() => migrations.models.Migration.deleteMany({ name: 'test' }));
 
   it('stores the current state of the cursor', async function() {
     let count = 0;

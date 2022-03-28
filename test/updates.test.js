@@ -23,6 +23,7 @@ describe('updates', function() {
   });
 
   afterEach(() => migrations.endMigration());
+  afterEach(() => migrations.models.Migration.deleteMany({ name: 'test' }));
 
   it('stores the update result if succeeded', async function() {
     await TestModel.collection.insertOne({ name: 'John Smith' });

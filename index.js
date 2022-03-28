@@ -10,9 +10,11 @@ let Migration = null;
 let Operation = null;
 let migration = null;
 
+exports.models = { Migration: null, Operation: null };
+
 const mongooseObjToOp = new WeakMap();
 
-exports._initMigrationFramework = function _initMigrationFramework(conn) {
+(function _initMigrationFramework(conn) {
   conn = conn || mongoose.connection;
 
   if (conn.models._Migration) {
@@ -20,7 +22,9 @@ exports._initMigrationFramework = function _initMigrationFramework(conn) {
   }
 
   Migration = Migration || conn.model('_Migration', migrationSchema, '_migrations');
+  exports.models.Migration = Migration;
   Operation = Operation || conn.model('_Operation', operationSchema, '_operations');
+  exports.models.Operation = Operation;
 
   mongoose.plugin(function(schema) {
     schema.pre(['updateOne', 'updateMany', 'replaceOne'], async function() {
@@ -56,12 +60,17 @@ exports._initMigrationFramework = function _initMigrationFramework(conn) {
       await op.save();
     });
   });
-};
+})();
 
 exports.startMigration = async function startMigration(options) {
   options = options || {};
   if (options.restart) {
     return exports.restartMigration(options);
+  }
+
+  const existingMigration = await Migration.exists({ name: options.name });
+  if (existingMigration) {
+    throw new Error(`Migration "${options.name}" already ran`);
   }
 
   migration = await Migration.create({
