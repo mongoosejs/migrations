@@ -1,0 +1,123 @@
+<html>
+  <head><title>Mongoose Migrations</title></head>
+
+  <body>
+    <div id="content"></div>
+
+    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://unpkg.com/axios@0.26"></script>
+    <script src="https://unpkg.com/vue-router@4"></script>
+    <script>
+      const app = Vue.createApp({
+        data: () => ({
+          status: 'loading',
+          migrations: []
+        }),
+        methods: {
+          async loadOperations(migration) {
+            const { data } = await axios.get(`operations/${migration._id}`);
+
+          }
+        },
+        template: `
+          <div>
+            <h1>Mongoose Migrations</h1>
+            <router-view></router-view>
+          </div>
+        `
+      });
+
+      const home = app.component('home', {
+        data: () => ({
+          status: 'loading',
+          migrations: []
+        }),
+        methods: {
+          formatDate
+        },
+        template: `
+          <div>
+            <table v-if="status === 'loaded' && migrations.length">
+              <tr>
+                <th>Started At</th>
+                <th>Name</th>
+                <th>Details</th>
+              </tr>
+              <tr v-for="migration in migrations">
+                <td>{{formatDate(migration.startedAt)}}</td>
+                <td>{{migration.name}}</td>
+                <td @click="$router.push('/migration/' + migration._id)">&#9660;</td>
+              </tr>
+            </table>
+
+            <div v-if="status === 'loaded' && migrations.length === 0">
+              No migrations found
+            </div>
+          </div>
+        `,
+        async mounted() {
+          const { data } = await axios.get('migrations');
+          this.migrations = data.migrations;
+          this.status = 'loaded';
+        }
+      });
+
+      const migration = app.component('migration', {
+        data: () => ({
+          status: 'loading',
+          migration: null,
+          operations: []
+        }),
+        methods: {
+          formatDate
+        },
+        props: ['migrationId'],
+        async mounted() {
+          const { data } = await axios.get('migration/' + this.migrationId);
+          this.migration = data.migration;
+          this.operations = data.operations;
+          this.status = 'loaded';
+        },
+        template: `
+          <div>
+            <div v-if="status === 'loaded'">
+              {{migration.name}} {{operations.length}}
+            </div>
+          </div>
+        `
+      });
+
+      const routes = [
+        { path: '/', component: app.component('home') },
+        {
+          path: '/migration/:migrationId',
+          component: app.component('migration'),
+          props: (route) => {
+            return {
+              migrationId: route.params.migrationId
+            };
+          }
+        }
+      ];
+      const router = VueRouter.createRouter({
+        history: VueRouter.createWebHashHistory(),
+        routes,
+      });
+
+      app.use(router);
+      app.mount('#content');
+
+      function formatDate(date) {
+        date = new Date(date);
+
+        return date.toLocaleString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: 'numeric'
+        });
+      }
+    </script>
+  </body>
+</html>
