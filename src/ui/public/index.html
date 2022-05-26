@@ -105,12 +105,15 @@
       });
 
       app.component('operationResult', {
-        props: ['status', 'result', 'error'],
+        props: ['status', 'result', 'state', 'error'],
         mounted() {
           Prism.highlightElement(this.$refs.code);
         },
         computed: {
           displayResult() {
+            if (this.status === 'in_progress') {
+              return this.state;
+            }
             return this.status === 'error' ? this.error.message : this.result;
           }
         },
@@ -139,7 +142,7 @@
                 <th>Status</th>
                 <th>Started At</th>
                 <th>Ended At</th>
-                <th>Result</th>
+                <th>Details</th>
               </tr>
               <tr v-for="operation in operations">
                 <td>{{operation._id}}</td>
@@ -152,6 +155,7 @@
                   <operationResult
                     :status="operation.status"
                     :result="operation.result"
+                    :state="operation.state"
                     :error="operation.error">
                   </operationResult>
                 </td>
@@ -193,6 +197,25 @@
           this.migration = data.migration;
           this.operations = data.operations;
           this.status = 'loaded';
+
+          if (this.migration.status === 'error' || this.migration.status === 'complete') {
+            return;
+          }
+          this.interval = setInterval(async () => {
+            const { data } = await axios.get('migration/' + this.migrationId);
+            this.migration = data.migration;
+            this.operations = data.operations;
+
+            if (this.migration.status === 'error' || this.migration.status === 'complete') {
+              clearInterval(this.interval);
+              this.interval = null;
+            }
+          }, 1000);
+        },
+        unmounted() {
+          if (this.interval) {
+            clearInterval(this.interval);
+          }
         },
         template: `
           <div>
@@ -256,6 +279,9 @@
       app.mount('#content');
 
       function formatDate(date) {
+        if (date == null) {
+          return '';
+        }
         date = new Date(date);
 
         return date.toLocaleString('en-US', {

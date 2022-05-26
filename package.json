@@ -5,7 +5,8 @@
     "test": "mocha test/*.test.js"
   },
   "dependencies": {
-    "debug": "4.x"
+    "debug": "4.x",
+    "ws": "8.7.0"
   },
   "peerDependencies": {
     "mongoose": "6.x"

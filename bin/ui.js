@@ -10,7 +10,7 @@ mongoose.connect(process.env.MONGO_URL || 'mongodb://localhost:27017/migrationst
 
 app.use('/', ui(mongoose, express));
 
-app.listen(3001, err => {
+const server = app.listen(3001, err => {
   if (err != null) {
     console.error(err);
     process.exit(-1);
