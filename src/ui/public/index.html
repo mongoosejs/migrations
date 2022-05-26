@@ -170,12 +170,22 @@
       });
 
       app.component('migration-source', {
+        data: () => ({
+          maximize: false
+        }),
         props: ['sourceCode'],
         mounted() {
           Prism.highlightElement(this.$refs.code);
         },
         template: `
-        <pre><code ref="code" class="language-javascript">{{sourceCode}}</code></pre>
+        <div style="position: relative">
+          <div class="arrow" @click="maximize = !maximize">
+            {{maximize ? '&#9650;' : '&#9660;'}}
+          </div>
+          <div :class="maximize ? '' : 'max-height'" style="overflow: hidden">
+            <pre><code ref="code" class="language-javascript">{{sourceCode}}</code></pre>
+          </div>
+        </div>
         `
       })
 

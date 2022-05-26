@@ -12,6 +12,7 @@ run().catch(err => {
 async function run() {
   await mongoose.connect('mongodb://localhost:27017/migrations_examples');
 
+  await Character.deleteMany({});
   await Character.create([
     {
       name: 'Jean-Luc Picard',
@@ -27,6 +28,7 @@ async function run() {
     }
   ]);
 
+  await Episode.deleteMany({});
   await Episode.create([
     {
       "title": "Encounter at Farpoint",

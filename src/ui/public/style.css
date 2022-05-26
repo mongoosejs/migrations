@@ -107,3 +107,15 @@ table td {
 .migration-detail pre.language-javascript {
   background: #fafafa;
 }
+
+.migration-detail .max-height {
+  max-height: 7.5em;
+}
+
+.migration-detail .arrow {
+  position: absolute;
+  right: 5px;
+  top: 10px;
+  cursor: pointer;
+  font-size: 2em;
+}
