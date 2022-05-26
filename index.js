@@ -125,10 +125,31 @@ exports.startMigration = async function startMigration(options) {
     }
   });
 
+  const author = await new Promise(resolve => {
+    if (!require.main.filename) {
+      return resolve(null);
+    }
+    try {
+      exec(`git blame -p ${require.main.filename}`, (err, data) => {
+        if (err != null) {
+          return resolve(null);
+        }
+        data = data.toString('utf8');
+        const lines = data.split('\n');
+        const name = lines[1].trim().replace(/^author/, '');
+        const email = lines[2].trim().replace(/^author-mail/, '');
+        resolve({ name, email });
+      })
+    } catch (err) {
+      resolve(null);
+    }
+  });
+
   migration = await Migration.create({
     name,
     sourceCode,
     githash,
+    author,
     startedAt: new Date()
   });
 

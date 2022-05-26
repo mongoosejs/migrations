@@ -209,6 +209,11 @@
                 <span :class="migrationStatus(migration.status)" v-text="migration.status"></span>
               </div>
               <div class="info-point">
+                <b>Author: </b>
+                <span v-text="migration.author && migration.author.name">
+                </span>
+              </div>
+              <div class="info-point">
                 <b>Git Hash: </b>
                 <span v-text="migration.githash">
                 </span>
