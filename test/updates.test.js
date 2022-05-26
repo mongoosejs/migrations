@@ -29,6 +29,8 @@ describe('updates', function() {
     await TestModel.collection.insertOne({ name: 'John Smith' });
     await TestModel.updateOne({ name: 'John Smith' }, { name: 'John Smythe' });
 
+    console.log('F', migration)
+
     const operations = await mongoose.model('_Operation').find({ migrationId: migration._id });
     assert.equal(operations.length, 1);
     assert.deepEqual(operations[0].result, {

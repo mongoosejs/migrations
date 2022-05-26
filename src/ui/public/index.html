@@ -1,5 +1,8 @@
 <html>
-  <head><title>Mongoose Migrations</title></head>
+  <head>
+    <title>Mongoose Migrations</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
 
   <body>
     <div id="content"></div>
@@ -7,6 +10,15 @@
     <script src="https://unpkg.com/vue@3"></script>
     <script src="https://unpkg.com/axios@0.26"></script>
     <script src="https://unpkg.com/vue-router@4"></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/prismjs@1.28.0/themes/prism.css">
+    </link>
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/prismjs@1.28.0/prism.js"
+      data-manual>
+    </script>
     <script>
       const app = Vue.createApp({
         data: () => ({
@@ -21,7 +33,24 @@
         },
         template: `
           <div>
-            <h1>Mongoose Migrations</h1>
+            <header>
+              <div class="nav-left">
+                <img src="/images/mongoose.svg" />
+
+                mongoose
+              </div>
+              <div class="nav-right">
+                <div class="nav-item active">
+                  <router-link to="/">
+                    Migrations
+                  </router-link>
+                </div>
+                <div class="nav-item">
+                  Models
+                </div>
+              </div>
+              <div style="clear: both"></div>
+            </header>
             <router-view></router-view>
           </div>
         `
@@ -33,20 +62,33 @@
           migrations: []
         }),
         methods: {
-          formatDate
+          formatDate,
+          migrationStatus(status) {
+            return status === 'complete' ? { success: true } : { fail: true };
+          }
         },
         template: `
-          <div>
+          <div class="migrations-list">
             <table v-if="status === 'loaded' && migrations.length">
               <tr>
-                <th>Started At</th>
+                <th>ID</th>
                 <th>Name</th>
+                <th>Status</th>
+                <th>Started At</th>
+                <th>Ended At</th>
                 <th>Details</th>
               </tr>
               <tr v-for="migration in migrations">
-                <td>{{formatDate(migration.startedAt)}}</td>
+                <td>{{migration._id}}</td>
                 <td>{{migration.name}}</td>
-                <td @click="$router.push('/migration/' + migration._id)">&#9660;</td>
+                <td :class="migrationStatus(migration.status)">{{migration.status}}</td>
+                <td>{{formatDate(migration.startedAt)}}</td>
+                <td>{{formatDate(migration.endedAt)}}</td>
+                <td @click="$router.push('/migration/' + migration._id)">
+                  <div class="details-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="vt-link-icon" data-v-7f892bef=""><path d="M9,19c-0.3,0-0.5-0.1-0.7-0.3c-0.4-0.4-0.4-1,0-1.4l5.3-5.3L8.3,6.7c-0.4-0.4-0.4-1,0-1.4s1-0.4,1.4,0l6,6c0.4,0.4,0.4,1,0,1.4l-6,6C9.5,18.9,9.3,19,9,19z"></path></svg>
+                  </div>
+                </td>
               </tr>
             </table>
 
@@ -62,6 +104,77 @@
         }
       });
 
+      app.component('operationResult', {
+        props: ['status', 'result', 'error'],
+        mounted() {
+          Prism.highlightElement(this.$refs.code);
+        },
+        computed: {
+          displayResult() {
+            return this.status === 'error' ? this.error.message : this.result;
+          }
+        },
+        template: `
+          <div>
+            <pre><code class="language-javascript" ref="code">{{this.displayResult}}</code></pre>
+          </div>
+        `
+      })
+
+      app.component('operations', {
+        props: ['operations'],
+        methods: {
+          formatDate,
+          operationStatus(status) {
+            return status === 'complete' ? { success: true } : { fail: true };
+          }
+        },
+        template: `
+          <div>
+            <table v-if="operations.length">
+              <tr>
+                <th>ID</th>
+                <th>Model Name</th>
+                <th>Op Name</th>
+                <th>Status</th>
+                <th>Started At</th>
+                <th>Ended At</th>
+                <th>Result</th>
+              </tr>
+              <tr v-for="operation in operations">
+                <td>{{operation._id}}</td>
+                <td>{{operation.modelName}}</td>
+                <td>{{operation.opName}}</td>
+                <td :class="operationStatus(operation.status)">{{operation.status}}</td>
+                <td>{{formatDate(operation.startedAt)}}</td>
+                <td>{{formatDate(operation.endedAt)}}</td>
+                <td>
+                  <operationResult
+                    :status="operation.status"
+                    :result="operation.result"
+                    :error="operation.error">
+                  </operationResult>
+                </td>
+              </tr>
+            </table>
+
+            <div v-if="operations.length === 0">
+              No operations
+            </div>
+          </div>
+        `
+      });
+
+      app.component('migration-source', {
+        props: ['sourceCode'],
+        mounted() {
+          Prism.highlightElement(this.$refs.code);
+        },
+        template: `
+        <pre><code ref="code" class="language-javascript">{{sourceCode}}</code></pre>
+        `
+      })
+
       const migration = app.component('migration', {
         data: () => ({
           status: 'loading',
@@ -69,7 +182,10 @@
           operations: []
         }),
         methods: {
-          formatDate
+          formatDate,
+          migrationStatus(status) {
+            return status === 'complete' ? { success: true } : { fail: true };
+          }
         },
         props: ['migrationId'],
         async mounted() {
@@ -80,8 +196,35 @@
         },
         template: `
           <div>
-            <div v-if="status === 'loaded'">
-              {{migration.name}} {{operations.length}}
+            <div v-if="status === 'loaded'" class="migration-detail">
+              <h1>{{migration.name}}</h1>
+              <div class="info-point">
+                <b>Started At: </b>{{formatDate(migration.startedAt)}}
+              </div>
+              <div class="info-point" v-if="migration.endedAt">
+                <b>Ended At: </b>{{formatDate(migration.endedAt)}}
+              </div>
+              <div class="info-point">
+                <b>Status: </b>
+                <span :class="migrationStatus(migration.status)" v-text="migration.status"></span>
+              </div>
+              <div class="info-point">
+                <b>Git Hash: </b>
+                <span v-text="migration.githash">
+                </span>
+              </div>
+              <div class="info-point">
+                <b>Source Code: </b>
+                <span>
+                  <migration-source :sourceCode="migration.sourceCode"></migration-source>
+                </span>
+              </div>
+              <div class="info-point">
+                <div>
+                  <b>Operations:</b>
+                </div>
+                <operations :operations="operations"></operations>
+              </div>
             </div>
           </div>
         `
@@ -115,7 +258,9 @@
           day: 'numeric',
           year: 'numeric',
           hour: 'numeric',
-          minute: 'numeric'
+          minute: 'numeric',
+          second: 'numeric',
+          fractionalSecondDigits: 3
         });
       }
     </script>

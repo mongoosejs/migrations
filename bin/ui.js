@@ -6,7 +6,7 @@ const ui = require('../src/ui');
 
 const app = express();
 
-mongoose.connect('mongodb://localhost:27017/migrationstest');
+mongoose.connect(process.env.MONGO_URL || 'mongodb://localhost:27017/migrationstest');
 
 app.use('/', ui(mongoose, express));
 

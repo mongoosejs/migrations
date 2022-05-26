@@ -1,5 +1,7 @@
 'use strict';
 
+const { exec } = require('child_process');
+const fs = require('fs');
 const migrationSchema = require('./src/schemas/migrationSchema');
 const mongoose = require('mongoose');
 const operationSchema = require('./src/schemas/operationSchema');
@@ -16,6 +18,7 @@ exports.models = { Migration: null, Operation: null };
 const mongooseObjToOp = new WeakMap();
 
 exports.initMigrationModels = function initMigrationModels(conn) {
+  conn = conn || mongoose;
   if (conn.models._Migration) {
     return;
   }
@@ -88,13 +91,44 @@ exports.startMigration = async function startMigration(options) {
     return exports.restartMigration(options);
   }
 
-  const existingMigration = await Migration.exists({ name: options.name });
+  const defaultName = require.main.filename ? require.main.filename.slice(require.main.filename.lastIndexOf('/') + 1) : 'Unknown';
+  const name = options.name || defaultName;
+
+  const existingMigration = await Migration.exists({ name });
   if (existingMigration) {
-    throw new Error(`Migration "${options.name}" already ran`);
+    throw new Error(`Migration "${name}" already ran`);
   }
 
+  const sourceCode = await new Promise(resolve => {
+    try {
+      fs.readFile(require.main.filename, (err, data) => {
+        if (err != null) {
+          return resolve(null);
+        }
+        resolve(data.toString('utf8'));
+      });
+    } catch (err) {
+      resolve(null);
+    }
+  });
+
+  const githash = await new Promise(resolve => {
+    try {
+      exec('git log -1 --format="%H"', (err, data) => {
+        if (err != null) {
+          return resolve(null);
+        }
+        resolve(data.toString('utf8'));
+      })
+    } catch (err) {
+      resolve(null);
+    }
+  });
+
   migration = await Migration.create({
-    name: options.name,
+    name,
+    sourceCode,
+    githash,
     startedAt: new Date()
   });
 

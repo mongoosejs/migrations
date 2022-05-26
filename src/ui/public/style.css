@@ -1,0 +1,109 @@
+body {
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Nav */
+
+header .nav-left {
+  float: left;
+  line-height: 54px;
+  font-size: 20px;
+  padding-left: 20px;
+}
+
+header {
+  border-bottom: 1px solid rgba(60, 60, 60, .12);
+  height: 55px;
+}
+
+header .nav-left img {
+  height: 32px;
+  vertical-align: middle;
+  margin-right: 0.5em;
+}
+
+header .nav-right {
+  float: right;
+  display: flex;
+  flex-direction: row;
+  font-size: 16px;
+  line-height: 54px;
+  padding-right: 20px;
+}
+
+header .nav-right .nav-item {
+  flex-grow: 1;
+  padding: 0px 12px;
+}
+
+header .nav-right .nav-item.active {
+  border-bottom: 1px solid #880000;
+}
+
+/* Global */
+
+a, a:visited {
+  color: black;
+  text-decoration: none;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table th {
+  text-align: left;
+  padding: 0.75em;
+}
+
+table td {
+  border-top: 1px solid #dee2e6;
+  padding: 0.75em;
+  line-height: 1.5em;
+}
+
+.success {
+  color: #4DBA13;
+}
+
+.fail {
+  color: #D41515;
+}
+
+/* Home */
+
+.migrations-list .details-button {
+  background-color: #dee2e6;
+  border-radius: 3px;
+  text-align: center;
+  padding: 0px 0.5em;
+  width: 1.5em;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.migrations-list .details-button svg {
+  height: 1.5em;
+}
+
+/* Migration Detail */
+
+.migration-detail {
+  padding: 20px;
+}
+
+.migration-detail .info-point {
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+}
+
+.migration-detail table {
+  margin-top: 1em;
+}
+
+.migration-detail pre.language-javascript {
+  background: #fafafa;
+}

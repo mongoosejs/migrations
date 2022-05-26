@@ -13,6 +13,16 @@ module.exports = new mongoose.Schema({
     enum: ['not_started', 'in_progress', 'error', 'complete'],
     default: 'in_progress'
   },
+  sourceCode: {
+    type: String
+  },
+  githash: {
+    type: String
+  },
+  author: {
+    name: String,
+    email: String
+  },
   error: {
     message: String,
     stack: String
