@@ -114,7 +114,8 @@
             if (this.status === 'in_progress') {
               return this.state;
             }
-            return this.status === 'error' ? this.error.message : this.result;
+
+            return this.status === 'error' ? (({ message, doc }) => ({ message, doc }))(this.error) : this.result;
           }
         },
         template: `

@@ -25,7 +25,8 @@ module.exports = new mongoose.Schema({
   },
   error: {
     message: String,
-    stack: String
+    stack: String,
+    doc: 'Mixed'
   },
   startedAt: {
     type: Date,

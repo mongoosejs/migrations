@@ -87,12 +87,11 @@ exports.startMigration = async function startMigration(options) {
   }
 
   options = options || {};
-  if (options.restart) {
-    return exports.restartMigration(options);
-  }
-
   const defaultName = require.main.filename ? require.main.filename.slice(require.main.filename.lastIndexOf('/') + 1) : 'Unknown';
   const name = options.name || defaultName;
+  if (options.restart) {
+    return exports.restartMigration({ ...options, name });
+  }
 
   const existingMigration = await Migration.exists({ name });
   if (existingMigration) {
@@ -267,6 +266,7 @@ exports.eachAsync = async function eachAsync(model, options, fn) {
       op.status = 'error';
       op.error.message = err.message;
       op.error.stack = err.stack;
+      op.error.doc = doc;
       op.endedAt = new Date();
       --op.state.current;
       op.markModified('state.current');
@@ -275,6 +275,7 @@ exports.eachAsync = async function eachAsync(model, options, fn) {
       migration.status = 'error';
       migration.error.message = err.message;
       migration.error.stack = err.stack;
+      migration.error.doc = doc;
       migration.endedAt = new Date();
       await migration.save();
 

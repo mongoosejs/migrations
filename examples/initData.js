@@ -23,6 +23,10 @@ async function run() {
       rank: 'Commander'
     },
     {
+      name: 'Worf', // <-- No last name
+      rank: 'Lieutenant'
+    },
+    {
       name: 'Geordi La Forge',
       rank: 'Lieutenant'
     }
