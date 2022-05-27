@@ -41,15 +41,25 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
         return;
       }
 
-      const op = await Operation.create({
+      const opFilter = migration.lastOperationId ? { _id: { $gt: migration.lastOperationId } } : {};
+      Object.assign(opFilter, {
         migrationId: migration._id,
         modelName: this.model.modelName,
-        opName: this.op,
-        parameters: {
-          filter: this.getFilter(),
-          update: this.getUpdate()
-        }
+        opName: this.op
       });
+      const op = await Operation.findOneAndUpdate(
+        opFilter,
+        {
+          $setOnInsert: {
+            parameters: {
+              filter: this.getFilter(),
+              update: this.getUpdate()
+            }
+          }
+        },
+        { new: true, upsert: true }
+      );
+
       migration.lastOperationId = op._id;
       await migration.save();
 
@@ -68,6 +78,10 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
       if (op == null) {
         return;
       }
+
+      /*if (op.result) {
+        Object.assign(res, op.result);
+      }*/
       op.endedAt = new Date();
       op.status = 'complete';
       op.result = res;
