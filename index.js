@@ -48,9 +48,6 @@ exports.initMigrationModels = function initMigrationModels(conn) {
 exports.initMigrationFramework = function initMigrationFramework(conn) {
   conn = conn || mongoose.connection;
   didInit = true;
-  if (didInit) {
-    return;
-  }
 
   exports.initMigrationModels(conn);
 
