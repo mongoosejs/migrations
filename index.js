@@ -36,7 +36,7 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
   exports.initMigrationModels(conn);
 
   mongoose.plugin(function(schema) {
-    schema.pre(['updateOne', 'updateMany', 'replaceOne'], async function() {
+    schema.pre(['updateOne', 'updateMany', 'replaceOne'], async function(next) {
       if (migration == null) {
         return;
       }
@@ -47,7 +47,7 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
         modelName: this.model.modelName,
         opName: this.op
       });
-      const op = await Operation.findOneAndUpdate(
+      const res = await Operation.findOneAndUpdate(
         opFilter,
         {
           $setOnInsert: {
@@ -57,8 +57,10 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
             }
           }
         },
-        { new: true, upsert: true }
+        { new: true, upsert: true, rawResult: true }
       );
+
+      const op = res.value;
 
       migration.lastOperationId = op._id;
       await migration.save();
@@ -66,6 +68,10 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
       debug(`${this.model.modelName}.${this.op}`);
 
       mongooseObjToOp.set(this, op);
+
+      if (res.lastErrorObject.updatedExisting) {
+        next(mongoose.skipMiddlewareFunction(op.result));
+      }
     });
 
     schema.post(['updateOne', 'updateMany', 'replaceOne'], async function(res) {

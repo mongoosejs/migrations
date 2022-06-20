@@ -39,4 +39,39 @@ describe('updates', function() {
       upsertedId: null
     });
   });
+
+  it('skips the update if there is already a compatible operation', async function() {
+    const doc = { name: 'John Smith' };
+    await TestModel.collection.insertOne(doc);
+
+    await mongoose.model('_Operation').create({
+      migrationId: migration._id,
+      modelName: 'Test',
+      opName: 'updateOne',
+      status: 'complete',
+      result: {
+        matchedCount: 1,
+        modifiedCount: 1,
+        fakeProp: 2
+      }
+    });
+
+    const res = await TestModel.updateOne({ name: 'John Smith' }, { name: 'John Smythe' });
+    assert.deepEqual(res, {
+      matchedCount: 1,
+      modifiedCount: 1,
+      fakeProp: 2
+    });
+
+    const operations = await mongoose.model('_Operation').find({ migrationId: migration._id });
+    assert.equal(operations.length, 1);
+    assert.deepEqual(operations[0].result, {
+      matchedCount: 1,
+      modifiedCount: 1,
+      fakeProp: 2
+    });
+
+    const fromDb = await TestModel.collection.findOne({ _id: doc._id });
+    assert.equal(fromDb.name, 'John Smith');
+  });
 });
