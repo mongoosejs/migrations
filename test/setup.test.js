@@ -1,7 +1,6 @@
 'use strict';
 
-const { before } = require('mocha');
-const migrations = require('../');
+const { after, before } = require('mocha');
 const mongoose = require('mongoose');
 
 before(async function() {

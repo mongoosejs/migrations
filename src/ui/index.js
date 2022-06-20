@@ -37,4 +37,4 @@ module.exports = function ui(conn, express) {
   router.use(express.static(`${__dirname}/public`));
 
   return router;
-}
+};

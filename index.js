@@ -138,7 +138,7 @@ exports.startMigration = async function startMigration(options) {
           return resolve(null);
         }
         resolve(data.toString('utf8'));
-      })
+      });
     } catch (err) {
       resolve(null);
     }
@@ -158,7 +158,7 @@ exports.startMigration = async function startMigration(options) {
         const name = lines[1].trim().replace(/^author/, '');
         const email = lines[2].trim().replace(/^author-mail/, '');
         resolve({ name, email });
-      })
+      });
     } catch (err) {
       resolve(null);
     }
@@ -246,7 +246,7 @@ exports.eachAsync = async function eachAsync(model, options, fn) {
     migrationId: migration._id,
     modelName: model.modelName,
     opName: 'eachAsync',
-    userFunctionName: options?.name || fn.name,
+    userFunctionName: options?.name || fn.name
   });
   const op = await Operation.findOneAndUpdate(
     opFilter,
@@ -306,4 +306,4 @@ exports.eachAsync = async function eachAsync(model, options, fn) {
   op.status = 'complete';
   op.endedAt = new Date();
   await op.save();
-}
+};
