@@ -40,6 +40,19 @@ describe('updates', function() {
     });
   });
 
+  it('handles findOneAndUpdate', async function() {
+    await TestModel.collection.insertOne({ name: 'John Smith' });
+    await TestModel.findOneAndUpdate(
+      { name: 'John Smith' },
+      { name: 'John Smythe' },
+      { new: true }
+    );
+
+    const operations = await mongoose.model('_Operation').find({ migrationId: migration._id });
+    assert.equal(operations.length, 1);
+    assert.deepEqual(operations[0].result.name, 'John Smythe');
+  });
+
   it('skips the update if there is already a compatible operation', async function() {
     const doc = { name: 'John Smith' };
     await TestModel.collection.insertOne(doc);

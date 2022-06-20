@@ -15,6 +15,22 @@ let didInit = false;
 
 exports.models = { Migration: null, Operation: null };
 
+const writeOps = [
+  // Update
+  'findOneAndReplace',
+  'findOneAndUpdate',
+  'replaceOne',
+  'update',
+  'updateMany',
+  'updateOne',
+  // Delete
+  'deleteMany',
+  'deleteOne',
+  'findOneAndDelete',
+  'findOneAndRemove',
+  'remove'
+];
+
 const mongooseObjToOp = new WeakMap();
 
 exports.initMigrationModels = function initMigrationModels(conn) {
@@ -36,7 +52,7 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
   exports.initMigrationModels(conn);
 
   mongoose.plugin(function(schema) {
-    schema.pre(['updateOne', 'updateMany', 'replaceOne'], async function(next) {
+    schema.pre(writeOps, { query: true, document: false }, async function(next) {
       if (migration == null) {
         return;
       }
@@ -74,7 +90,7 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
       }
     });
 
-    schema.post(['updateOne', 'updateMany', 'replaceOne'], async function(res) {
+    schema.post(writeOps, { query: true, document: false }, async function(res) {
       if (migration == null) {
         return;
       }
@@ -85,12 +101,11 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
         return;
       }
 
-      /*if (op.result) {
-        Object.assign(res, op.result);
-      }*/
-      op.endedAt = new Date();
-      op.status = 'complete';
-      op.result = res;
+      if (op.status !== 'complete') {
+        op.endedAt = new Date();
+        op.status = 'complete';
+        op.result = res;
+      }
 
       debug(`${this.model.modelName}.${this.op}: ${res.modifiedCount} updated`);
 
