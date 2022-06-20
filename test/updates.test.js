@@ -62,6 +62,10 @@ describe('updates', function() {
       modelName: 'Test',
       opName: 'updateOne',
       status: 'complete',
+      parameters: {
+        filter: { name: 'John Smith' },
+        update: { name: 'John Smythe' }
+      },
       result: {
         matchedCount: 1,
         modifiedCount: 1,

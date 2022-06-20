@@ -5,6 +5,9 @@
     "lint": "eslint .",
     "test": "mocha test/*.test.js"
   },
+  "bin": {
+    "migration-ui": "./bin/migration-ui.js"
+  },
   "dependencies": {
     "debug": "4.x"
   },

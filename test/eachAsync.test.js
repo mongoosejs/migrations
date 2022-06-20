@@ -79,10 +79,14 @@ describe('eachAsync', function() {
 
     migration = await migrations.restartMigration({ name: 'test' });
     count = 0;
+    let eachAsyncId = null;
     await migrations.eachAsync(TestModel, async function addShip(doc) {
+      if (eachAsyncId == null) {
+        eachAsyncId = migration.lastOperationId;
+      }
       ++count;
 
-      const op = await mongoose.model('_Operation').findById(migration.lastOperationId);
+      const op = await mongoose.model('_Operation').findById(eachAsyncId);
       assert.equal(op.state.current, count + 2);
       doc.ship = 'USS Enterprise';
       await doc.save();

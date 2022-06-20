@@ -48,11 +48,14 @@ exports.initMigrationModels = function initMigrationModels(conn) {
 exports.initMigrationFramework = function initMigrationFramework(conn) {
   conn = conn || mongoose.connection;
   didInit = true;
+  if (didInit) {
+    return;
+  }
 
   exports.initMigrationModels(conn);
 
   mongoose.plugin(function(schema) {
-    schema.pre(writeOps, { query: true, document: false }, async function(next) {
+    schema.pre(writeOps, { query: true, document: false }, async function migrationPreWriteOp(next) {
       if (migration == null) {
         return;
       }
@@ -61,16 +64,17 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
       Object.assign(opFilter, {
         migrationId: migration._id,
         modelName: this.model.modelName,
-        opName: this.op
+        opName: this.op,
+        parameters: {
+          filter: this.getFilter(),
+          update: this.getUpdate()
+        }
       });
       const res = await Operation.findOneAndUpdate(
         opFilter,
         {
           $setOnInsert: {
-            parameters: {
-              filter: this.getFilter(),
-              update: this.getUpdate()
-            }
+            status: 'in_progress'
           }
         },
         { new: true, upsert: true, rawResult: true }
@@ -90,7 +94,7 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
       }
     });
 
-    schema.post(writeOps, { query: true, document: false }, async function(res) {
+    schema.post(writeOps, { query: true, document: false }, async function migrationPostWriteOp(res) {
       if (migration == null) {
         return;
       }
@@ -108,6 +112,68 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
       }
 
       debug(`${this.model.modelName}.${this.op}: ${res.modifiedCount} updated`);
+
+      await op.save();
+    });
+
+    schema.pre('save', async function migrationPreSave(next) {
+      if (migration == null) {
+        return;
+      }
+
+      const opFilter = migration.lastOperationId ? { _id: { $gt: migration.lastOperationId } } : {};
+      Object.assign(opFilter, {
+        migrationId: migration._id,
+        modelName: this.constructor.modelName,
+        opName: 'save',
+        parameters: {
+          where: this.isNew ? null : this.$__delta()[0],
+          isNew: this.isNew,
+          changes: this.getChanges()
+        }
+      });
+
+      const res = await Operation.findOneAndUpdate(
+        opFilter,
+        {
+          $setOnInsert: {
+            status: 'in_progress'
+          }
+        },
+        { new: true, upsert: true, rawResult: true }
+      );
+
+      const op = res.value;
+
+      migration.lastOperationId = op._id;
+      await migration.save();
+
+      debug(`${this.constructor.modelName}.save`);
+
+      mongooseObjToOp.set(this, op);
+
+      if (res.lastErrorObject.updatedExisting) {
+        next(mongoose.skipMiddlewareFunction(op.result));
+      }
+    });
+
+    schema.post('save', async function migrationPostSave() {
+      if (migration == null) {
+        return;
+      }
+
+      const op = mongooseObjToOp.get(this);
+
+      if (op == null) {
+        return;
+      }
+
+      if (op.status !== 'complete') {
+        op.endedAt = new Date();
+        op.status = 'complete';
+      }
+
+      debug(`${this.constructor.modelName}.save`);
 
       await op.save();
     });
@@ -263,6 +329,7 @@ exports.eachAsync = async function eachAsync(model, options, fn) {
     opName: 'eachAsync',
     userFunctionName: options?.name || fn.name
   });
+
   const op = await Operation.findOneAndUpdate(
     opFilter,
     {
