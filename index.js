@@ -117,6 +117,9 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
       if (migration == null) {
         return;
       }
+      if (this.$isSubdocument) {
+        return; // No need to check subdocuments, top-level pre('save') will track the operation
+      }
 
       const opFilter = migration.lastOperationId ? { _id: { $gt: migration.lastOperationId } } : {};
       Object.assign(opFilter, {
