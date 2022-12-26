@@ -1,5 +1,6 @@
 'use strict';
 
+const AlreadyRanError = require('./src/error/alreadyRan');
 const { exec } = require('child_process');
 const fs = require('fs');
 const migrationSchema = require('./src/schemas/migrationSchema');
@@ -14,6 +15,8 @@ let migration = null;
 let didInit = false;
 
 exports.models = { Migration: null, Operation: null };
+
+exports.AlreadyRanError = AlreadyRanError;
 
 const writeOps = [
   // Update
@@ -196,7 +199,7 @@ exports.startMigration = async function startMigration(options) {
 
   const existingMigration = await Migration.exists({ name });
   if (existingMigration) {
-    throw new Error(`Migration "${name}" already ran`);
+    throw new AlreadyRanError(`Migration "${name}" already ran`);
   }
 
   const sourceCode = await new Promise(resolve => {
