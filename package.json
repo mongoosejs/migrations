@@ -1,6 +1,6 @@
 {
   "name": "@mongoosejs/migrations",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "scripts": {
     "lint": "eslint .",
     "test": "mocha test/*.test.js"
@@ -14,7 +14,7 @@
     "yargs": "17.7.1"
   },
   "peerDependencies": {
-    "mongoose": "^6.4.0 || 7.x || 7.0.0-rc0"
+    "mongoose": "^6.4.0 || 7.x"
   },
   "devDependencies": {
     "@masteringjs/eslint-config": "0.0.1",
