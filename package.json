@@ -6,10 +6,12 @@
     "test": "mocha test/*.test.js"
   },
   "bin": {
+    "mongoose-migrations": "./bin/mongoose-migrations.js",
     "migration-ui": "./bin/migration-ui.js"
   },
   "dependencies": {
-    "debug": "4.x"
+    "debug": "4.x",
+    "yargs": "17.7.1"
   },
   "peerDependencies": {
     "mongoose": "^6.4.0 || 7.x || 7.0.0-rc0"

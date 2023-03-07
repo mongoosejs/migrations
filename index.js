@@ -199,7 +199,8 @@ exports.startMigration = async function startMigration(options) {
 
   const existingMigration = await Migration.exists({ name });
   if (existingMigration) {
-    throw new AlreadyRanError(`Migration "${name}" already ran`);
+    console.log(`Migration "${name}" already ran`);
+    return process.exit(0);
   }
 
   const sourceCode = await new Promise(resolve => {
