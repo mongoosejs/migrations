@@ -183,8 +183,6 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
   });
 };
 
-exports.initMigrationFramework();
-
 exports.startMigration = async function startMigration(options) {
   if (!didInit) {
     exports.initMigrationFramework();
@@ -199,8 +197,12 @@ exports.startMigration = async function startMigration(options) {
 
   const existingMigration = await Migration.exists({ name });
   if (existingMigration) {
-    console.log(`Migration "${name}" already ran`);
-    return process.exit(0);
+    if (options && options.overwrite) {
+      await Migration.deleteMany({ name });
+    } else {
+      console.log(`Migration "${name}" already ran`);
+      return process.exit(0);
+    }
   }
 
   const sourceCode = await new Promise(resolve => {
