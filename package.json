@@ -1,6 +1,6 @@
 {
   "name": "@mongoosejs/migrations",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "scripts": {
     "lint": "eslint .",
     "test": "mocha test/*.test.js"
