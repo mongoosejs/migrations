@@ -198,7 +198,8 @@ exports.startMigration = async function startMigration(options) {
   const existingMigration = await Migration.exists({ name });
   if (existingMigration) {
     if (options && options.overwrite) {
-      await Migration.deleteMany({ name });
+      await Migration.deleteOne({ _id: existingMigration._id });
+      await Operation.deleteMany({ migrationId: existingMigration._id });
     } else {
       console.log(`Migration "${name}" already ran`);
       return process.exit(0);
