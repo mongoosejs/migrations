@@ -130,7 +130,7 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
         modelName: this.constructor.modelName,
         opName: 'save',
         parameters: {
-          where: this.isNew ? null : this.$__delta()[0],
+          where: this.isNew ? null : (this.$__delta() || [])[0],
           isNew: this.isNew,
           changes: this.getChanges()
         }
