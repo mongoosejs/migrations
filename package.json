@@ -14,7 +14,7 @@
     "yargs": "17.7.1"
   },
   "peerDependencies": {
-    "mongoose": "^6.4.0 || 7.x"
+    "mongoose": "^6.4.0 || 7.x || 8.0.0-rc0 || 8.x"
   },
   "devDependencies": {
     "@masteringjs/eslint-config": "0.0.1",
