@@ -77,7 +77,7 @@ exports.initMigrationFramework = function initMigrationFramework(conn) {
             status: 'in_progress'
           }
         },
-        { new: true, upsert: true, rawResult: true }
+        { new: true, upsert: true, includeResultMetadata: true }
       );
 
       const op = res.value;
